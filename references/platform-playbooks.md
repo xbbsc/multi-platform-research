@@ -122,12 +122,14 @@ curl --noproxy '*' "https://api.bilibili.com/x/web-interface/view?bvid=<BV>" \
 
 ## 4. 知乎（P3 社交平台）
 
-最后验证：2026-10-20（静态轨道）/ 浏览器轨道待下次实战复核
+最后验证：2026-10-21（静态轨道 + 浏览器轨道均经 probe_platforms.mjs 实测）
 
-### 访问模型与登录墙
-- **静态优先**：问题页与回答页对未登录大多可读（有「展开阅读全文」节流）；搜索引擎索引充分，`site:zhihu.com` 命中率高。脚本化直抓易 403 → 用 `https://r.jina.ai/<url>` 转取。
-- **浏览器轨道**：连续匿名访问多个页面后会弹登录墙——此时降级静态轨道或请用户扫码；知乎登录一般非必需。
+### 访问模型与登录墙（2026-10-21 实测基线）
+- **搜索页已强制登录**：匿名访问即弹全屏登录窗，关闭后结果区不渲染（显示「未搜索」）；**热榜页 302 跳登录页**。站内搜索只能走静态轨道（WebSearch `site:zhihu.com`）或登录态。
+- **问题页直链匿名可读**：回答正文可提取，伴生可关闭的登录浮层（先 `eval` 点击关闭再提取，手法同小红书弹窗）。静态轨道「WebSearch 找问题 URL → 读问题页」依然成立。
+- **脚本化直抓易 403** → 浏览器轨道或 `https://r.jina.ai/<url>` 转取（jina 本机不可达时，agent 环境走 WebFetch 服务端）。
 - **登录态**（如已登录）：`z_c0` cookie 为登录判据（verify_login.mjs zhihu）。
+- 以上基线由 `scripts/probe_platforms.mjs` 的 `zhihu-question-dom` / `zhihu-search-policy` 项持续体检。
 
 ### 漏斗取证
 - **静态轨道**：WebSearch `site:zhihu.com <关键词>` → 收集问题 URL → r.jina.ai 逐个取全文 → 提取问题标题、高赞回答要点、赞同数。
