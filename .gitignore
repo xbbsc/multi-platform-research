@@ -1,0 +1,10 @@
+# OS junk files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+
+# Node (本 skill 零依赖，防御性排除)
+node_modules/
