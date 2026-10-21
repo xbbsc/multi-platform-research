@@ -2,8 +2,12 @@
 // 平台登录态判定：cookie（含 HttpOnly）+ DOM 标记双判据
 // 依赖：Node 22+；调试浏览器已在 9222（或 CDP_PORT）运行
 // 用法：node verify_login.mjs <xhs|douyin|zhihu>
-// 输出：JSON { platform, pages, cookieHits, domMarks, verdict }
-//       verdict: likely-logged-in | likely-logged-out | unknown
+// 输出：JSON { platform, pages, cookieHits, domMarks, domMarksPerPage, verdict }
+//       domMarks: 汇总对象（loginModal/avatar 任一页命中即为 true）
+//       domMarksPerPage: 逐页明细 [{ url, loginModal, avatar }]
+//       verdict: likely-logged-in | likely-expired | likely-logged-out | unknown
+//         likely-expired = strong cookie 在 profile 里留存，但页面弹出登录窗
+//                          ——登录态已失效，需重新扫码（v0.2.0 新增判定）
 // 注意：判定结果必须配合人工读截图复核（UI 为准，见 env-pitfalls.md D2/D4）
 
 const PORT = process.env.CDP_PORT || 9222;
@@ -68,7 +72,7 @@ function send(ws, method, params = {}, sessionId, timeout = 12000) {
 }
 
 const ws = await connect();
-const out = { platform, pages: [], cookieHits: [], domMarks: {}, verdict: 'unknown' };
+const out = { platform, pages: [], cookieHits: [], domMarks: {}, domMarksPerPage: [], verdict: 'unknown' };
 
 try {
   const { targetInfos } = await send(ws, 'Target.getTargets');
@@ -90,13 +94,17 @@ try {
           out.cookieHits.push({ name: key, strong: P.strongCookies.includes(key) });
         }
       }
-      // 判据 2：DOM 标记（登录弹窗在场 = 未登录；头像类标记在场 = 可能已登录）
+      // 判据 2：DOM 标记（登录弹窗在场 = 未登录/已过期；头像类标记在场 = 可能已登录）
+      // 逐页收集到 domMarksPerPage，最后汇总——修复旧版多标签页循环覆盖问题
       const marks = await send(ws, 'Runtime.evaluate', { expression: `
         JSON.stringify({
           loginModal: !!document.querySelector('${P.loginModal}'),
           avatar: !!document.querySelector('${P.avatarMark}')
         })`, returnByValue: true }, sessionId);
-      out.domMarks = JSON.parse(marks.result.value || '{}');
+      const pageMarks = JSON.parse(marks.result.value || '{}');
+      out.domMarksPerPage.push({ url: t.url.slice(0, 80), ...pageMarks });
+      out.domMarks.loginModal = out.domMarks.loginModal || pageMarks.loginModal === true;
+      out.domMarks.avatar = out.domMarks.avatar || pageMarks.avatar === true;
     } catch (e) { /* 单页失败不致命 */ }
   }
 
@@ -115,12 +123,14 @@ try {
   }
 
   const strongCookie = out.cookieHits.some(c => c.strong);
-  if (strongCookie && !out.domMarks.loginModal) out.verdict = 'likely-logged-in';
-  else if (!strongCookie && (out.domMarks.loginModal || pages.length === 0)) out.verdict = 'likely-logged-out';
+  const anyLoginModal = out.domMarks.loginModal === true;
+  if (strongCookie && !anyLoginModal) out.verdict = 'likely-logged-in';
+  else if (strongCookie && anyLoginModal) out.verdict = 'likely-expired'; // cookie 留存但界面弹登录窗 → 已过期，需重新扫码
+  else if (!strongCookie && (anyLoginModal || pages.length === 0)) out.verdict = 'likely-logged-out';
   else out.verdict = 'unknown'; // 信号矛盾 → 必须人工读截图
 } finally {
   ws.close();
 }
 
 console.log(JSON.stringify(out, null, 2));
-console.log('提示: verdict=unknown 时，用 cdp_session.mjs shot 截图后人工读图确认（UI 为准）。');
+console.log('提示: verdict=unknown 时，用 cdp_session.mjs shot 截图后人工读图确认（UI 为准）；verdict=likely-expired 时请用户重新扫码。');
