@@ -47,20 +47,32 @@
 
 ## 2. 中间数据 Schema
 
+> **通用字段约定（v0.2.0 起）**：
+> - `platform`：`bili | xhs | douyin | zhihu | web`——跨平台汇合分析时的分组依据，禁止靠文件名推断；
+> - `crawledAt`：ISO 8601 抓取时间戳（如 `2026-10-21T18:30:00+08:00`）——**每条互动型数据必填**；
+> - `likeLabel`：`like | view | agree`——声明 `like` 字段的语义（赞/播放/赞同），禁止消费方猜测。
+>
+> **为什么 `crawledAt` 必填**：互动量是「活数据」，每时每刻都在变。今天记 1675 赞，用户下周核验可能已是 3000——单靠互动量当核查锚点会漂移失准；「互动量 + 抓取时间戳」组合才是稳定锚点（核对时按时间差预估合理涨幅）。
+
 ### 漏斗搜索结果（每平台一份 `*_search_results.json`）
 
 ```json
 {
-  "<关键词>": [
-    {
-      "title": "标题",
-      "author": "作者/UP主",
-      "like": 1675,            // 互动量：赞 / 播放 / 赞同，按平台
-      "extra": {"collect": 0, "commentCount": 0},  // 可选
-      "href": "/search_result/<id>?xsec_token=...",   // 完整原样保留！
-      "keyword": "来源关键词"
-    }
-  ]
+  "platform": "xhs",
+  "crawledAt": "2026-10-21T18:30:00+08:00",
+  "keywords": {
+    "<关键词>": [
+      {
+        "title": "标题",
+        "author": "作者/UP主",
+        "like": 1675,            // 互动量原始值，语义由 likeLabel 声明
+        "likeLabel": "like",     // xhs/bili=like；douyin=like(获赞)；zhihu=agree
+        "extra": {"collect": 0, "commentCount": 0},  // 可选
+        "href": "/search_result/<id>?xsec_token=...",   // 完整原样保留！
+        "keyword": "来源关键词"
+      }
+    ]
+  }
 }
 ```
 
@@ -68,8 +80,11 @@
 
 ```json
 {
+  "platform": "xhs",
+  "crawledAt": "2026-10-21T19:05:00+08:00",
   "title": "...", "author": "...", "url": "完整带token链接",
-  "desc": "正文全文", "like": 0, "collect": 0, "commentCount": 0,
+  "desc": "正文全文", "like": 0, "likeLabel": "like",
+  "collect": 0, "commentCount": 0,
   "comments": [ {"author": "...", "content": "...", "likes": 0} ]
 }
 ```
@@ -90,7 +105,7 @@
 
 1. **落盘即回读**：每个 JSON 写完回读校验条数与关键字段（硬规则 3）。
 2. **API 回验**：可公开核验的数据（B站视频信息等）必须经官方 API 回验后才写入结论。
-3. **互动量必录**：没有互动量的来源行不合格——它既是质量信号又是核查锚点。
+3. **互动量 + 时间戳必录**：没有互动量的来源行不合格；互动量落盘时必须带 `crawledAt` 抓取时间——两者组合才是可回查的稳定锚点（硬规则：活数据不定锚）。
 4. **诚实标注**：登录墙、折叠、付费墙、搜不到，全部如实记录；降级来源（转载/二手）不与一手混排。
 5. **成品回读**：最终交付物在成品内部验证关键词在位（如 docx 的 document.xml），并抽样回查 5–10 条链接。
 6. **洗稿检测**：高度雷同的二创内容不作为独立来源计数，避免来源统计虚高。

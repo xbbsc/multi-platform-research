@@ -24,7 +24,7 @@ agent_created: true
 1. **诚实降级**：打不开、搜不到、被登录墙拦截，一律如实记录状态，严禁编造内容或猜测数据。
 2. **中间数据 JSON 落盘**：每个检索阶段的原始数据写入 `research/` 下的 JSON 文件；stdout 仅用于状态汇报，不是数据存储。脚本直接 `fs.writeFileSync` 写文件（UTF-8），不依赖 stdout 重定向（PowerShell 5.1 重定向默认 UTF-16 会毁掉中文）。
 3. **回读校验铁律**：关键文件写入后必须回读确认存在与内容；最终交付物必须在成品内部（如 docx 的 document.xml）验证关键词在位。
-4. **反风控节奏**：页面导航间隔 ≥7 秒（推荐 7–11s 随机），不短时密集开页；触发风控信号（验证码、403、空白页）立即停下如实报告，不换姿势硬闯。
+4. **礼貌访问节奏（速率自律）**：页面导航间隔 ≥7 秒（推荐 7–11s 随机），不短时密集开页；触发平台风控信号（验证码、403、空白页）立即停下如实报告，不换姿势硬闯。
 5. **登录墙不硬闯**：先试无登录访问 → 被拦则记录并降级到搜索引擎索引/转载渠道 → 确需一手数据时，由**用户本人**在隔离 profile 浏览器里扫码登录；本技能永不接触账号密码，不使用第三方代登录。
 6. **永不关闭最后一个标签页**：关闭最后一个 page 会导致整个浏览器退出。脚本刻意不提供 close 命令；用「复用/新建标签页 + 导航」替代关闭。
 7. **本地端口访问一律绕过系统代理**：curl 加 `--noproxy '*'`；Node 的 fetch 天然不走 HTTP_PROXY 环境变量（这是选它做 CDP 控制与 CDN 下载的原因之一）。
@@ -39,7 +39,7 @@ agent_created: true
 1. 明确调研问题清单与交付物定义；确定目标平台与每平台的访问策略（静态可取 / 需浏览器 / 需登录）。
 2. 建 `research/` 工作目录；约定产物命名（如 `xhs_search_results.json`）。
 3. 子代理并行设计：每条轨道（P1 静态 / P2 视频平台 / P3 社交平台）派一个子代理，prompt 必须**自包含**——目标、方法约束（引用硬规则）、输出格式、来源 URL 要求、关键词建议全部写明，不依赖对话上下文。
-4. 环境预检：确认调试浏览器可用（启动命令见 `references/env-pitfalls.md` 条目 A1），运行 `scripts/cdp_session.mjs list` 确认 CDP 通道。
+4. 环境预检：确认调试浏览器可用（启动命令见 `references/env-pitfalls.md` 条目 A1），运行 `scripts/cdp_session.mjs list` 确认 CDP 通道；正式检索前先跑 `scripts/probe_platforms.mjs` 体检——关键项 FAIL 说明对应平台知识已失效，先按 DOM probe 循环修正 playbooks 再开工。
 
 ### P1 一手源侦察（静态轨道）
 - 方法：WebSearch（多组关键词变体 + `site:` 限定）+ WebFetch + `r.jina.ai` 前缀抓取。
@@ -54,7 +54,7 @@ agent_created: true
 - 详见 playbooks 第 1 节。
 
 ### P3 社交平台深挖（小红书 / 抖音 / 知乎）
-- **登录墙决策树**（每平台独立执行）：无登录试探 → 被拦记录并降级（搜索引擎索引 `site:` 限定 / 转载渠道）→ 向用户说明并请求扫码登录（隔离 profile，登录态留存可复用）→ 登录后截图验证（cookie 可能 HttpOnly，界面为准）→ 带登录态执行漏斗。
+- **登录墙决策树**（每平台独立执行）：无登录试探 → 被拦记录并降级（搜索引擎索引 `site:` 限定 / 转载渠道）→ 向用户说明并请求扫码登录（隔离 profile，登录态留存可复用）→ 登录后截图验证（cookie 可能 HttpOnly，界面为准；`verify_login.mjs` 输出 `likely-expired` 表示登录态已过期需重新扫码）→ 带登录态执行漏斗。
 - **漏斗取证**：多关键词站内搜索 → 卡片全量 JSON（含带 token 的完整链接）→ 按互动量（赞/藏/播放/赞同）排序 → 深挖 top N：正文 + 互动数据 + 评论区热评。
 - **DOM probe 循环**：选择器失效时，截图看真实状态 + dump 局部 DOM → 修正选择器 → 重试。各平台已知 DOM 特征与坑见 playbooks 第 2–4 节。
 - 三个平台的访问模型、入口 URL、提取方法、坑位清单全部在 playbooks。
@@ -84,7 +84,8 @@ node scripts/cdp_session.mjs nav <targetId|url子串> <url> # 导航已有标签
 node scripts/cdp_session.mjs eval <targetId|url子串> "<js>" # 页面内执行 JS
 node scripts/cdp_session.mjs shot <targetId|url子串> <out.png> # 截图
 
-node scripts/verify_login.mjs xhs|douyin|zhihu           # 登录态判定（JSON 输出）
+node scripts/verify_login.mjs xhs|douyin|zhihu           # 登录态判定（JSON 输出；likely-expired=需重新扫码）
+node scripts/probe_platforms.mjs [--static-only|--browser-only] [--out <json>] # 平台体检：各平台知识有效性一键验证
 node scripts/download_images.mjs --list <imglist.json> --out-dir <dir> [--referer <url>] [--min-width N]
 ```
 
@@ -97,6 +98,7 @@ node scripts/download_images.mjs --list <imglist.json> --out-dir <dir> [--refere
 | `references/platform-playbooks.md` | 进入 P1–P4 任一阶段前；含各平台访问模型、入口、提取法、坑位与最后验证日期 |
 | `references/env-pitfalls.md` | 启动浏览器 / CDP 连接失败 / 数据异常时排查；17 条「症状→根因→解法」 |
 | `references/evidence-standards.md` | P5 成文前；标注体系、三态核验格式、JSON schema、质量门禁 |
+| `references/agent-integration.md` | 运行环境非 WorkBuddy 时；P0–P5 能力映射、降级策略、跨平台启动命令 |
 | `assets/report-template.md` | P5 成文时；带来源标注的报告骨架 |
 
 ## 平台对抗性声明
