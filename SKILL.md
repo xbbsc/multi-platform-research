@@ -39,7 +39,7 @@ agent_created: true
 1. 明确调研问题清单与交付物定义；确定目标平台与每平台的访问策略（静态可取 / 需浏览器 / 需登录）。
 2. 建 `research/` 工作目录；约定产物命名（如 `xhs_search_results.json`）。
 3. 子代理并行设计：每条轨道（P1 静态 / P2 视频平台 / P3 社交平台）派一个子代理，prompt 必须**自包含**——目标、方法约束（引用硬规则）、输出格式、来源 URL 要求、关键词建议全部写明，不依赖对话上下文。
-4. 环境预检：确认调试浏览器可用（启动命令见 `references/env-pitfalls.md` 条目 A1），运行 `scripts/cdp_session.mjs list` 确认 CDP 通道；正式检索前先跑 `scripts/probe_platforms.mjs` 体检——关键项 FAIL 说明对应平台知识已失效，先按 DOM probe 循环修正 playbooks 再开工。
+4. 环境预检：`node scripts/start_browser.mjs` 一键启动调试浏览器（跨平台自动找 Chrome/Edge、幂等、自检就绪；已运行直接报 OK）；再跑 `scripts/probe_platforms.mjs` 体检——关键项 FAIL 说明对应平台知识已失效，先按 DOM probe 循环修正 playbooks 再开工。
 
 ### P1 一手源侦察（静态轨道）
 - 方法：WebSearch（多组关键词变体 + `site:` 限定）+ WebFetch + `r.jina.ai` 前缀抓取。
@@ -55,7 +55,7 @@ agent_created: true
 
 ### P3 社交平台深挖（小红书 / 抖音 / 知乎）
 - **登录墙决策树**（每平台独立执行）：无登录试探 → 被拦记录并降级（搜索引擎索引 `site:` 限定 / 转载渠道）→ 向用户说明并请求扫码登录（隔离 profile，登录态留存可复用）→ 登录后截图验证（cookie 可能 HttpOnly，界面为准；`verify_login.mjs` 输出 `likely-expired` 表示登录态已过期需重新扫码）→ 带登录态执行漏斗。
-- **漏斗取证**：多关键词站内搜索 → 卡片全量 JSON（含带 token 的完整链接）→ 按互动量（赞/藏/播放/赞同）排序 → 深挖 top N：正文 + 互动数据 + 评论区热评。
+- **漏斗取证**：多关键词站内搜索 → 卡片全量 JSON（含带 token 的完整链接）→ 按互动量（赞/藏/播放/赞同）排序 → 深挖 top N：正文 + 互动数据 + 评论区热评。**采样纪律**：同时执行 evidence-standards.md 第 2 节——互动量 top N 之外固定追加「最新发布」组（对抗幸存者偏差），满足信息饱和/配额即停（终止条件），矛盾证据按裁决规则处理，不无限扩采。
 - **DOM probe 循环**：选择器失效时，截图看真实状态 + dump 局部 DOM → 修正选择器 → 重试。各平台已知 DOM 特征与坑见 playbooks 第 2–4 节。
 - 三个平台的访问模型、入口 URL、提取方法、坑位清单全部在 playbooks。
 
@@ -66,7 +66,7 @@ agent_created: true
 - 详见 playbooks 第 5 节。
 
 ### P5 交叉核验与成文
-1. 汇合三轨发现，执行**三态交叉核验**：新证据 vs 既有结论 → 证实 / 修正 / 未能复核，产出核验表（格式见 evidence-standards.md）。
+1. 汇合三轨发现，执行**三态交叉核验**：新证据 vs 既有结论 → 证实 / 修正 / 未能复核，产出核验表（格式见 evidence-standards.md）；来源冲突按**裁决规则**（一手>二手、官方>个人、新>旧、无法裁决则并列呈现）处理，裁决理由写入核验表。
 2. 按来源标注体系成文：每条有来源的要点旁附灰色来源行（平台图标 + 明文 URL + 作者/互动量），文首给标注图例。
 3. 全文质量自检：抽样回查 5–10 条链接可达性；关键词回读校验成品文件。
 4. （可选）Word 排版交接：调用 `workbuddy-docx` 技能，传入成文底稿路径；转换器不支持超链接时以明文 URL 呈现来源。
@@ -74,18 +74,18 @@ agent_created: true
 ## 脚本使用
 
 ```bash
-# 启动调试浏览器（先决条件；独立 profile 不影响用户日常浏览器，登录态留存）
-# "<chrome路径>" --remote-debugging-port=9222 --user-data-dir="<隔离profile目录>" --no-first-run "about:blank"
-# 注意：浏览器与下方所有脚本同会话、禁用沙箱运行
+# 启动调试浏览器（跨平台一条命令；幂等、自动找 Chrome/Edge、自检就绪）
+node scripts/start_browser.mjs                # --headless 无头（CI）；--stay 挂住保活（托管环境）
 
-node scripts/cdp_session.mjs list                        # 列出标签页
+node scripts/cdp_session.mjs list                        # 列出标签页（--json 纯结构化输出）
 node scripts/cdp_session.mjs new <url>                   # 新建标签页并导航
 node scripts/cdp_session.mjs nav <targetId|url子串> <url> # 导航已有标签页
 node scripts/cdp_session.mjs eval <targetId|url子串> "<js>" # 页面内执行 JS
+node scripts/cdp_session.mjs eval <目标> --file <script.js>  # 从文件执行（免 shell 转义，推荐）
 node scripts/cdp_session.mjs shot <targetId|url子串> <out.png> # 截图
 
 node scripts/verify_login.mjs xhs|douyin|zhihu           # 登录态判定（JSON 输出；likely-expired=需重新扫码）
-node scripts/probe_platforms.mjs [--static-only|--browser-only] [--out <json>] # 平台体检：各平台知识有效性一键验证
+node scripts/probe_platforms.mjs [--static-only|--browser-only] [--out <json>] [--md <摘要.md>] # 平台体检
 node scripts/download_images.mjs --list <imglist.json> --out-dir <dir> [--referer <url>] [--min-width N]
 ```
 
@@ -96,7 +96,7 @@ node scripts/download_images.mjs --list <imglist.json> --out-dir <dir> [--refere
 | 文件 | 何时读 |
 |---|---|
 | `references/platform-playbooks.md` | 进入 P1–P4 任一阶段前；含各平台访问模型、入口、提取法、坑位与最后验证日期 |
-| `references/env-pitfalls.md` | 启动浏览器 / CDP 连接失败 / 数据异常时排查；17 条「症状→根因→解法」 |
+| `references/env-pitfalls.md` | 启动浏览器 / CDP 连接失败 / 数据异常时排查；18 条「症状→根因→解法」 |
 | `references/evidence-standards.md` | P5 成文前；标注体系、三态核验格式、JSON schema、质量门禁 |
 | `references/agent-integration.md` | 运行环境非 WorkBuddy 时；P0–P5 能力映射、降级策略、跨平台启动命令 |
 | `assets/report-template.md` | P5 成文时；带来源标注的报告骨架 |

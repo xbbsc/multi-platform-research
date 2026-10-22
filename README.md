@@ -3,6 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%E2%89%A522-blue)](https://nodejs.org/)
 [![CDP](https://img.shields.io/badge/CDP-Chrome_155%2B-green)](https://chromedevtools.github.io/devtools-protocol/)
+[![platform-probe](https://github.com/xbbsc/multi-platform-research/actions/workflows/probe.yml/badge.svg)](https://github.com/xbbsc/multi-platform-research/actions/workflows/probe.yml)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 
 多平台深度检索调研技能（Agent Skill）——把「多平台检索 → 结构化取证 → 交叉核验 → 可溯源成文」固化为可复用的标准流程。
@@ -58,26 +59,26 @@
 从零到第一次拿到截图与体检报告（终端实录）：
 
 ```bash
-# 1. 启动调试浏览器（独立 profile；按系统选一行）
-# macOS:
-"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --remote-debugging-port=9222 --user-data-dir="$HOME/.workbuddy/cdp-chrome-profile" --no-first-run --no-default-browser-check "about:blank" &
-# Linux:
-google-chrome --remote-debugging-port=9222 --user-data-dir="$HOME/.workbuddy/cdp-chrome-profile" --no-first-run --no-default-browser-check "about:blank" &
-# Windows (PowerShell):
-# & "C:\Program Files\Google\Chrome\Application\chrome.exe" --remote-debugging-port=9222 --user-data-dir="$HOME\.workbuddy\cdp-chrome-profile" --no-first-run --no-default-browser-check "about:blank"
+# 1. 一条命令启动调试浏览器（自动探测 Chrome/Edge 路径，macOS/Linux/Windows 通用；
+#    幂等：已在跑则直接报 OK；独立 profile 不影响日常浏览器）
+node scripts/start_browser.mjs
 
-# 2. 确认 CDP 通道已就绪
+#    无显示器环境（CI/服务器）加 --headless；挂住保活的托管环境加 --stay
+#    node scripts/start_browser.mjs --headless
+
+# 2. 确认 CDP 通道已就绪（--json 可得纯结构化输出）
 node scripts/cdp_session.mjs list
 
-# 3. 新开标签页、导航、截图
+# 3. 新开标签页、导航、截图；复杂 JS 用 --file 从文件执行（免 shell 转义）
 node scripts/cdp_session.mjs new "https://search.bilibili.com/all?keyword=%E8%B0%83%E7%A0%94"
 node scripts/cdp_session.mjs shot "bilibili" screenshot.png
+node scripts/cdp_session.mjs eval "bilibili" --file extract_cards.js
 
 # 4. 平台体检：验证各平台知识当下是否有效（浏览器不开则只跑静态组）
-node scripts/probe_platforms.mjs
+node scripts/probe_platforms.mjs --md probe_report.md
 ```
 
-体检报告（PASS/FAIL/SKIP 逐项 + JSON 落盘）是判断「该不该继续调研」与「playbooks 是否需要修正」的依据。
+体检报告（PASS/FAIL/SKIP 逐项 + JSON 落盘 + Markdown 摘要）是判断「该不该继续调研」与「playbooks 是否需要修正」的依据。GitHub Actions 每周自动跑静态组体检（可手动触发附带 headless Chrome 的浏览器组），报告见 [Actions 页](https://github.com/xbbsc/multi-platform-research/actions/workflows/probe.yml)。
 
 ## 使用
 
@@ -97,13 +98,15 @@ multi-platform-research/
 ├── SKILL.md                       # 主流程：P0–P5 + 11 条硬规则
 ├── README.md                      # 本文件
 ├── CHANGELOG.md                   # 版本历史
+├── .github/workflows/probe.yml    # CI：每周平台知识定时体检（可手动跑浏览器组）
 ├── references/
 │   ├── platform-playbooks.md      # 各平台打法：访问模型/入口/提取法/坑位（含最后验证日期）
-│   ├── env-pitfalls.md            # 17 条 Windows/CDP 环境坑：症状→根因→解法
-│   ├── evidence-standards.md      # 来源标注体系、三态核验格式、JSON schema、质量门禁
+│   ├── env-pitfalls.md            # 17+ 条 Windows/CDP 环境坑：症状→根因→解法
+│   ├── evidence-standards.md      # 来源标注体系、核验裁决规则、采样方法论、JSON schema、质量门禁
 │   └── agent-integration.md       # 非 WorkBuddy 环境的落地映射
 ├── scripts/
-│   ├── cdp_session.mjs            # 直连 CDP 通用控制器（list/new/nav/eval/shot）
+│   ├── start_browser.mjs          # 跨平台启动器：自动找 Chrome/Edge、幂等、自检 CDP 就绪
+│   ├── cdp_session.mjs            # 直连 CDP 通用控制器（list/new/nav/eval/shot，--file/--json）
 │   ├── verify_login.mjs           # 三平台登录态判定（cookie + DOM 双判据 + 过期判定）
 │   ├── probe_platforms.mjs        # 平台体检：一键验证各平台知识是否仍有效
 │   └── download_images.mjs        # 带 Referer 的批量图片下载（供多模态读取）

@@ -22,17 +22,22 @@
 # 1) Node.js ≥ 22（原生 WebSocket / fetch，无需 npm install）
 node --version
 
-# 2) 调试浏览器（独立 profile：登录态留存、不影响日常浏览器）
-# macOS:
-"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --remote-debugging-port=9222 --user-data-dir="$HOME/.workbuddy/cdp-chrome-profile" --no-first-run --no-default-browser-check "about:blank" &
-# Linux:
-google-chrome --remote-debugging-port=9222 --user-data-dir="$HOME/.workbuddy/cdp-chrome-profile" --no-first-run --no-default-browser-check "about:blank" &
-# Windows (PowerShell):
-& "C:\Program Files\Google\Chrome\Application\chrome.exe" --remote-debugging-port=9222 --user-data-dir="$HOME\.workbuddy\cdp-chrome-profile" --no-first-run --no-default-browser-check "about:blank"
+# 2) 调试浏览器：一条命令（推荐）——自动探测 Chrome/Edge（macOS/Linux/Windows）、
+#    幂等启动、轮询 CDP 就绪；独立 profile 登录态留存、不影响日常浏览器
+node scripts/start_browser.mjs
+#    选项：--headless（无显示器/CI）、--stay（挂住保活，托管环境用）、--port/--profile/--url
+
+#    手动启动（等价备选，脚本不可用时）：
+#    macOS:
+#    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --remote-debugging-port=9222 --user-data-dir="$HOME/.multi-platform-research/chrome-profile" --no-first-run --no-default-browser-check "about:blank" &
+#    Linux:
+#    google-chrome --remote-debugging-port=9222 --user-data-dir="$HOME/.multi-platform-research/chrome-profile" --no-first-run --no-default-browser-check "about:blank" &
+#    Windows (PowerShell):
+#    & "C:\Program Files\Google\Chrome\Application\chrome.exe" --remote-debugging-port=9222 --user-data-dir="$HOME\.multi-platform-research\chrome-profile" --no-first-run --no-default-browser-check "about:blank"
 
 # 3) 验证通道 + 平台体检
 node scripts/cdp_session.mjs list
-node scripts/probe_platforms.mjs
+node scripts/probe_platforms.mjs --md probe_report.md
 ```
 
 注意事项：

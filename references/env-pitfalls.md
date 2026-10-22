@@ -38,6 +38,11 @@
 - **根因**：沙箱生命周期绑定任务。
 - **解法**：浏览器与控制脚本**同一会话、以禁用沙箱方式**运行；接受「会话结束浏览器回收」的事实，把所有数据先落盘。
 
+### B1b. detached 子进程仍会被托管环境回收（2026-10-22 实测）
+- **症状**：`start_browser.mjs` 内部已用 `spawn(detached: true) + unref()`，WorkBuddy 类托管环境下命令结束浏览器照样被杀；标准终端 / CI（GitHub Actions runner）无此问题，脚本行为正常。
+- **根因**：托管工具用 Windows Job Object 等机制按命令回收整棵进程树，detached 逃不掉。
+- **解法**：托管环境用**监护模式** `node scripts/start_browser.mjs --stay` 以后台任务（`run_in_background`）方式运行——脚本就绪后挂住不退出，浏览器随任务长驻；浏览器退出时脚本随之退出，任务自然收尾。
+
 ### B2. 关闭最后一个标签页会杀死整个浏览器
 - **症状**：`Target.closeTarget` 后浏览器退出，后续全挂。
 - **根因**：最后一个 page 关闭 = 窗口关闭。
