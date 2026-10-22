@@ -72,6 +72,7 @@ curl --noproxy '*' "https://api.bilibili.com/x/web-interface/view?bvid=<BV>" \
 - 入口：`https://www.xiaohongshu.com/search_result?keyword=<URL编码>`（登录态）。
 - 卡片提取：probe 循环。已验证的可用特征（2026-10-21）：结果卡片为含 `/search_result/<id>?xsec_token=...` 或 `/explore/<id>` 链接的容器；提取 title / author / like 数 / **完整 href（必须带 xsec_token 原样保留）**。
 - 每关键词约 20 卡片、5 组关键词落盘 `xhs_search_results.json`；按赞数排序筛 top N。
+- **搜索页慢载/挂起（2026-10-22 实测）**：登录态下连续访问搜索页后，页面可能进入「URL 已切换但 load 永不完成」的节流状态（`Page.navigate` 客户端超时、`Runtime.evaluate` 挂起），同期首页正常。处置：**停下隔时段复测**、人工开浏览器确认、用 `verify_login.mjs xhs` 复核登录态；不要连环重试硬闯（硬规则 4）。
 
 ### 深挖笔记
 - 导航到卡片携带的完整带 token 链接；**移动端仿真显著改善渲染**：

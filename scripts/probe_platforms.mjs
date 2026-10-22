@@ -12,7 +12,8 @@
 //   静态组：B站公开 API / B站搜索页可达性 / r.jina.ai 转取服务 / 知乎直抓行为基线
 //   浏览器组：B站搜索卡片 DOM / 小红书登录态+搜索卡片(xsec_token) / 抖音登录态+搜索卡片
 //            / 知乎热榜问题链接 + 知乎搜索页登录墙行为基线
-//   未登录的平台自动 SKIP（不撞登录墙、不触发风控）；导航间隔 ≥7s（硬规则 4）。
+//   未登录的平台自动 SKIP（不撞登录墙、不触发风控）；导航间隔 ≥7s（硬规则 4）；
+//   浏览器组全程复用单个工作 tab（失活自动重建），不污染浏览器标签页状态。
 //
 // 输出：
 //   stdout 人类可读体检表；JSON 落盘 --out（默认 probe_report.json，UTF-8）。
@@ -39,6 +40,7 @@ const hasFlag = name => process.argv.includes('--' + name);
 const staticOnly = hasFlag('static-only');
 const browserOnly = hasFlag('browser-only');
 const outFile = arg('out', 'probe_report.json');
+const mdFile = arg('md'); // 可选：同步输出 Markdown 摘要（CI summary / 贴报告用）
 
 // ---------- 通用 fetch（带超时 + UA） ----------
 async function httpGet(url, headers = {}, timeoutMs = 15000) {
@@ -118,25 +120,47 @@ function record(id, platform, mode, status, detail, critical = true) {
 
 // ---------- 浏览器辅助 ----------
 let lastNavAt = 0;
+// 体检专用工作 tab：复用而非每次新建——一次全量体检只占 1 个 tab，不污染浏览器
+// （v0.2 每次导航 createTarget，全量体检会留下 7 个 tab）。tab 失活（被外部关闭 /
+// eval 挂起，env-pitfalls D4）时自动弃用重建。
+let probeTab = null; // { targetId, sessionId }
+async function ensureProbeTab(ws) {
+  if (probeTab) {
+    const { targetInfos } = await cdpSend(ws, 'Target.getTargets');
+    if (targetInfos.some(t => t.targetId === probeTab.targetId)) return probeTab;
+    probeTab = null; // 已消失 → 重建
+  }
+  const { targetId } = await cdpSend(ws, 'Target.createTarget', { url: 'about:blank' });
+  const { sessionId } = await cdpSend(ws, 'Target.attachToTarget', { targetId, flatten: true });
+  await cdpSend(ws, 'Page.enable', {}, sessionId).catch(() => {});
+  probeTab = { targetId, sessionId };
+  return probeTab;
+}
 async function navWithPace(ws, url, waitMs = 4000) {
-  // 反风控节奏：两次导航间隔 ≥7s（7–11s 随机）；首次导航不等待
+  // 速率自律：两次导航间隔 ≥7s（7–11s 随机）；首次导航不等待
   if (lastNavAt > 0) {
     const gap = 7000 + Math.floor(Math.random() * 4000);
     const since = Date.now() - lastNavAt;
     if (since < gap) await sleep(gap - since);
   }
-  const { targetId } = await cdpSend(ws, 'Target.createTarget', { url: 'about:blank' });
+  const tab = await ensureProbeTab(ws);
   lastNavAt = Date.now();
-  const { sessionId } = await cdpSend(ws, 'Target.attachToTarget', { targetId, flatten: true });
-  await cdpSend(ws, 'Page.enable', {}, sessionId).catch(() => {});
-  await cdpSend(ws, 'Page.navigate', { url }, sessionId);
+  // 导航命令不等 load（瀑布流页 load 可超 20s）：超时吞掉，页面真实状态由后续
+  // evalInPage 探测判定——数据说话，而不是让导航超时制造误报
+  await cdpSend(ws, 'Page.navigate', { url }, tab.sessionId).catch(() => {});
   await sleep(waitMs);
-  return { targetId, sessionId };
+  return tab;
 }
 async function evalInPage(ws, sessionId, expression, timeout = 15000) {
-  const r = await cdpSend(ws, 'Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true }, sessionId, timeout);
-  if (r.exceptionDetails) throw new Error('page-err: ' + JSON.stringify(r.exceptionDetails).slice(0, 160));
-  return r.result.value;
+  try {
+    const r = await cdpSend(ws, 'Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true }, sessionId, timeout);
+    if (r.exceptionDetails) throw new Error('page-err: ' + JSON.stringify(r.exceptionDetails).slice(0, 160));
+    return r.result.value;
+  } catch (e) {
+    // 超时 → tab 疑似挂起（env-pitfalls D4 同款症状），弃用，下次导航自动重建
+    if (String(e.message).startsWith('timeout:')) probeTab = null;
+    throw e;
+  }
 }
 // 浏览器级全量 cookie（HttpOnly 可见），返回该域的 cookie 名集合
 async function cookiesForDomain(ws, domain) {
@@ -232,7 +256,7 @@ async function runBrowser() {
       record('xhs-search-card', 'xhs', 'browser', 'skip', '未登录，不撞登录墙；登录后重跑可体检');
     } else {
       try {
-        const { sessionId } = await navWithPace(ws, 'https://www.xiaohongshu.com/search_result?keyword=' + encodeURIComponent('学习'), 6000);
+        const { sessionId } = await navWithPace(ws, 'https://www.xiaohongshu.com/search_result?keyword=' + encodeURIComponent('学习'), 9000);
         const r = await evalInPage(ws, sessionId, `JSON.stringify({
           cards: document.querySelectorAll('a[href*="/search_result/"], a[href*="/explore/"]').length,
           tokened: [...document.querySelectorAll('a[href*="/search_result/"], a[href*="/explore/"]')].filter(a => a.href.includes('xsec_token=')).length
@@ -241,7 +265,13 @@ async function runBrowser() {
         (cards >= 3 && tokened >= 1)
           ? record('xhs-search-card', 'xhs', 'browser', 'pass', `${cards} 卡片，${tokened} 带 xsec_token`)
           : record('xhs-search-card', 'xhs', 'browser', 'fail', `cards=${cards} tokened=${tokened}（阈值 cards≥3, tokened≥1）`);
-      } catch (e) { record('xhs-search-card', 'xhs', 'browser', 'fail', e.message); }
+      } catch (e) {
+        const msg = String(e.message);
+        const hint = msg.startsWith('timeout:')
+          ? '（页面 URL 可达但 load/eval 挂起——疑似登录态下搜索页被平台节流，或前端渲染卡死；建议隔时段复测 / 人工开浏览器确认 / 用 verify_login 复核登录态）'
+          : '';
+        record('xhs-search-card', 'xhs', 'browser', 'fail', msg + hint);
+      }
     }
 
     // --- 抖音：登录态 → 搜索卡片 ---
@@ -319,4 +349,24 @@ const report = {
 };
 fs.writeFileSync(outFile, JSON.stringify(report, null, 2), 'utf-8');
 console.log(`报告已落盘: ${path.resolve(outFile)}`);
+
+// Markdown 摘要（可选）：供 CI workflow summary 与直接粘贴报告
+if (mdFile) {
+  const icon = { pass: '✅', fail: '❌', skip: '⏭️' };
+  const md = [
+    '# 平台体检报告（probe_platforms）',
+    '',
+    `- 时间：${report.checkedAt}`,
+    `- 环境：node ${report.env.node} / ${report.env.os} / CDP ${report.env.cdpPort} / 浏览器组 ${report.env.browserGroup ? 'on' : 'off'}`,
+    `- 汇总：**${summary.pass} PASS / ${summary.fail} FAIL（关键 ${summary.failCritical}）/ ${summary.skip} SKIP**（SKIP 与非关键 FAIL 不算失败）`,
+    '',
+    '| 项目 | 平台 | 模式 | 状态 | 说明 |',
+    '|---|---|---|---|---|',
+    ...checks.map(c => `| ${c.id} | ${c.platform} | ${c.mode} | ${icon[c.status]} ${c.status.toUpperCase()}${c.critical ? '' : '（非关键）'} | ${String(c.detail).replace(/\|/g, '/')} |`),
+    '',
+    '> 体检全绿 = playbooks 平台知识当下可信；关键项 FAIL = 对应小节需 DOM probe 循环修正并更新「最后验证日期」。',
+  ].join('\n');
+  fs.writeFileSync(mdFile, md, 'utf-8');
+  console.log(`Markdown 摘要已落盘: ${path.resolve(mdFile)}`);
+}
 process.exit(summary.failCritical > 0 ? 1 : 0);
