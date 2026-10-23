@@ -1,0 +1,68 @@
+# 平台知识定时体检（Platform Knowledge Probe）
+#
+# 作用：定期验证本 skill 依赖的平台知识（DOM 特征 / 入口 URL / 行为基线）是否仍有效。
+#   - 静态组（每周自动）：无需浏览器，验证 B站公开 API / 搜索页 / jina 降级通道 / 知乎直抓基线
+#   - 浏览器组（手动可选）：安装 Chrome headless 跑浏览器组检查——这同时是对
+#     start_browser.mjs + probe_platforms.mjs 在 Linux 无头环境的跨平台验证
+#     （CI profile 无登录态，小红书/抖音项会如实 SKIP，不撞登录墙）
+#
+# 注意：runner 在海外，访问国内平台的延迟与可达性与国内网络不同——体检结果
+# 是「海外视角基线」，关键项 FAIL 时请先本地复测再下结论。
+#
+# 报告：写入 workflow summary（Markdown）+ 上传 artifact（JSON，保留 90 天）。
+# 退出码：关键项 FAIL → job 失败（这是预期信号：平台知识已腐化，需要修 playbooks）。
+
+name: platform-probe
+
+on:
+  schedule:
+    - cron: '0 1 * * 1' # 每周一 UTC 01:00（北京时间 09:00）
+  workflow_dispatch:
+    inputs:
+      with_browser:
+        description: '同时跑浏览器组（安装 Chrome，headless）'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: 静态组体检（无需浏览器）
+        run: node scripts/probe_platforms.mjs --static-only --out probe_report.json --md probe_report.md
+
+      - name: 浏览器组体检（headless Chrome，跨平台验证）
+        if: ${{ inputs.with_browser }}
+        run: |
+          wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg
+          echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] https://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
+          sudo apt-get update -q && sudo apt-get install -y -q google-chrome-stable
+          node scripts/start_browser.mjs --headless
+          node scripts/probe_platforms.mjs --browser-only --out probe_report_browser.json --md probe_report_browser.md
+
+      - name: 汇总到 workflow summary
+        if: always()
+        run: |
+          {
+            echo "## 平台体检报告"
+            cat probe_report.md 2>/dev/null || echo "（静态组报告缺失）"
+            if [ -f probe_report_browser.md ]; then printf '\n## 浏览器组（headless）\n'; cat probe_report_browser.md; fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: 上传体检报告
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: probe-report
+          path: probe_report*.json
+          retention-days: 90
