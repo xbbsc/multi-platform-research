@@ -1,0 +1,48 @@
+name: 平台知识失效 / Platform knowledge rotted
+description: 某平台的入口、DOM 或行为基线与 playbooks 记载不符（probe FAIL 或实际使用失灵）
+labels: ["platform-rotted"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢报告！平台知识过期是本项目最大的敌人，你的报告直接帮助所有人。
+        如果方便，我们更欢迎你直接提 PR 修正（见 CONTRIBUTING.md）——但先开 issue 也非常有价值。
+  - type: dropdown
+    id: platform
+    attributes:
+      label: 涉及平台
+      options:
+        - bili（B站）
+        - xhs（小红书）
+        - douyin（抖音）
+        - zhihu（知乎）
+        - other（其他/通用）
+    validations:
+      required: true
+  - type: textarea
+    id: symptom
+    attributes:
+      label: 症状
+      description: 什么操作 → 预期什么 → 实际发生什么（例如：probe 的 xhs-search-card FAIL；按 playbook 选择器抓不到卡片）
+    validations:
+      required: true
+  - type: textarea
+    id: probe-output
+    attributes:
+      label: probe 输出（关键行）
+      description: 运行 `node scripts/probe_platforms.mjs` 的输出，粘贴与该平台相关的 PASS/FAIL/SKIP 行
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: env
+    attributes:
+      label: 你的环境
+      description: 操作系统 / 网络环境（境内/境外/是否走代理）/ 是否登录态 / Chrome 版本
+    validations:
+      required: true
+  - type: textarea
+    id: diagnosis
+    attributes:
+      label: 初步诊断（可选）
+      description: 你认为是平台改版（知识腐化）还是环境限制（风控/无登录）？有修复思路更好
