@@ -99,6 +99,8 @@ node scripts/download_images.mjs --list <imglist.json> --out-dir <dir> [--refere
 | `references/env-pitfalls.md` | 启动浏览器 / CDP 连接失败 / 数据异常时排查；18 条「症状→根因→解法」 |
 | `references/evidence-standards.md` | P5 成文前；标注体系、三态核验格式、JSON schema、质量门禁 |
 | `references/agent-integration.md` | 运行环境非 WorkBuddy 时；P0–P5 能力映射、降级策略、跨平台启动命令 |
+| `references/extending-platforms.md` | 需要接入新平台时；决策清单、五步法、probe 关键性判定原则 |
+| `examples/` | 需要理解中间产物结构时；合成数据示例（漏斗 JSON / 深挖详情 / 报告片段） |
 | `assets/report-template.md` | P5 成文时；带来源标注的报告骨架 |
 
 ## 平台对抗性声明
