@@ -25,6 +25,9 @@
 
 ### Changed 变更
 
+- **README 首屏重写**：顶部嵌入 Social preview banner；正文前加英文摘要段（英文读者先看懂「这是什么、解决什么问题」再决定是否往下读）；「贡献」章节改为指向 `CONTRIBUTING.md` 与 Issue 表单；目录树补 `assets/`、`examples/`、`.github/` 三处新目录，避免文档与仓库结构脱节。
+- **`SKILL.md` 参考表补两行**：`references/extending-platforms.md`（要接新平台时读）与 `examples/`（想知道每步产出长什么样时读），让 skill 主入口能直接索引到 v1.0 新增资产。
+
 ## [0.3.0] - 2026-10-22
 
 主题：**可带走**——换一台 mac / linux，从零到第一次成功。
