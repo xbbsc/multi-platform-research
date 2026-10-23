@@ -1,0 +1,37 @@
+{
+  "platform": "bili",
+  "crawledAt": "2026-10-21T15:40:12+08:00",
+  "keywords": {
+    "大学生时间管理 调研": [
+      {
+        "title": "【示例】我用三周做了一份校园时间管理问卷：从选题到千份样本",
+        "author": "示例UP主-甲",
+        "like": 3201,
+        "likeLabel": "like",
+        "extra": { "bvid": "BV示例视频ID1", "duration": "12:34", "commentCount": 187 },
+        "href": "https://www.bilibili.com/video/BV示例视频ID1",
+        "keyword": "大学生时间管理 调研"
+      },
+      {
+        "title": "【示例】市场调查大赛全流程经验：组队、选题、数据分析",
+        "author": "示例UP主-乙",
+        "like": 1876,
+        "likeLabel": "like",
+        "extra": { "bvid": "BV示例视频ID2", "duration": "25:08", "commentCount": 342 },
+        "href": "https://www.bilibili.com/video/BV示例视频ID2",
+        "keyword": "大学生时间管理 调研"
+      }
+    ],
+    "问卷调研 样本量": [
+      {
+        "title": "【示例】问卷星几千份样本怎么来的？讲讲校园滚雪球抽样",
+        "author": "示例UP主-丙",
+        "like": 954,
+        "likeLabel": "like",
+        "extra": { "bvid": "BV示例视频ID3", "duration": "08:41", "commentCount": 76 },
+        "href": "https://www.bilibili.com/video/BV示例视频ID3",
+        "keyword": "问卷调研 样本量"
+      }
+    ]
+  }
+}
