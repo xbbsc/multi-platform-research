@@ -1,10 +1,14 @@
 # multi-platform-research
 
+![social preview](assets/social-preview.png)
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%E2%89%A522-blue)](https://nodejs.org/)
 [![CDP](https://img.shields.io/badge/CDP-Chrome_155%2B-green)](https://chromedevtools.github.io/devtools-protocol/)
 [![platform-probe](https://github.com/xbbsc/multi-platform-research/actions/workflows/probe.yml/badge.svg)](https://github.com/xbbsc/multi-platform-research/actions/workflows/probe.yml)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
+
+> **English** — A structured Agent Skill and toolbox for evidence-strict, multi-platform research on Chinese platforms (Bilibili / Douyin / Xiaohongshu / Zhihu). It turns "search → structured evidence collection → cross-verification → traceable writing" into a reusable 6-phase workflow, with platform playbooks carrying staleness dates, a one-shot platform health probe (run weekly by CI), CDP-based browser tooling, and source-attributed reporting. Install as a WorkBuddy skill, or run with any browser-capable agent — see [`references/agent-integration.md`](references/agent-integration.md). Chinese documentation below.
 
 多平台深度检索调研技能（Agent Skill）——把「多平台检索 → 结构化取证 → 交叉核验 → 可溯源成文」固化为可复用的标准流程。
 
@@ -98,11 +102,16 @@ multi-platform-research/
 ├── SKILL.md                       # 主流程：P0–P5 + 11 条硬规则
 ├── README.md                      # 本文件
 ├── CHANGELOG.md                   # 版本历史
-├── .github/workflows/probe.yml    # CI：每周平台知识定时体检（可手动跑浏览器组）
+├── CONTRIBUTING.md                # 贡献指南（playbook 修正 PR 的验证规范）
+├── .github/
+│   ├── workflows/probe.yml        # CI：每周平台知识定时体检（可手动跑浏览器组）
+│   ├── ISSUE_TEMPLATE/            # 「平台知识失效」报告表单
+│   └── PULL_REQUEST_TEMPLATE.md   # PR 模板（验证信息必填）
 ├── references/
 │   ├── platform-playbooks.md      # 各平台打法：访问模型/入口/提取法/坑位（含最后验证日期）
 │   ├── env-pitfalls.md            # 17+ 条 Windows/CDP 环境坑：症状→根因→解法
 │   ├── evidence-standards.md      # 来源标注体系、核验裁决规则、采样方法论、JSON schema、质量门禁
+│   ├── extending-platforms.md     # 新平台接入：决策清单 + 五步法 + 关键性判定原则
 │   └── agent-integration.md       # 非 WorkBuddy 环境的落地映射
 ├── scripts/
 │   ├── start_browser.mjs          # 跨平台启动器：自动找 Chrome/Edge、幂等、自检 CDP 就绪
@@ -110,8 +119,11 @@ multi-platform-research/
 │   ├── verify_login.mjs           # 三平台登录态判定（cookie + DOM 双判据 + 过期判定）
 │   ├── probe_platforms.mjs        # 平台体检：一键验证各平台知识是否仍有效
 │   └── download_images.mjs        # 带 Referer 的批量图片下载（供多模态读取）
+├── examples/                      # 合成数据示例库：漏斗 JSON / 深挖详情 / 报告片段
 └── assets/
-    └── report-template.md         # 带来源标注的报告骨架
+    ├── report-template.md         # 带来源标注的报告骨架
+    ├── social-preview.png         # 仓库分享卡片（1280×640）
+    └── social-preview.svg         # 卡片可编辑源文件
 ```
 
 ## 设计取舍
@@ -131,6 +143,15 @@ multi-platform-research/
 - **登录 profile 安全**：隔离 profile 含登录 cookie，勿共享、勿提交 git、勿授权不可信脚本读取。
 
 平台页面结构与接口可能随时间变化，使用前请运行体检脚本并自行复核。
+
+## 贡献
+
+平台知识会腐化，这个项目靠社区保鲜。发现某平台入口/选择器失灵？欢迎：
+
+- 开一个「[平台知识失效](.github/ISSUE_TEMPLATE/platform-rotted.yml)」issue（贴上体检输出即可）；
+- 直接提 playbook 修正 PR——验证要求见 [CONTRIBUTING.md](CONTRIBUTING.md)；
+- 接入新平台——五步法见 [references/extending-platforms.md](references/extending-platforms.md)；
+- 想先看看产出长什么样——合成数据示例在 [examples/](examples/)。
 
 ## License
 
