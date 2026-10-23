@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b1220"/>
+      <stop offset="1" stop-color="#131c31"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.78" cy="0.18" r="0.75">
+      <stop offset="0" stop-color="#2f6df6" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#2f6df6" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="0.12" cy="0.9" r="0.6">
+      <stop offset="0" stop-color="#ff2442" stop-opacity="0.10"/>
+      <stop offset="1" stop-color="#ff2442" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="dots" width="40" height="40" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.2" fill="#3a4a66" opacity="0.35"/>
+    </pattern>
+    <linearGradient id="line" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#2f6df6"/>
+      <stop offset="0.5" stop-color="#7c5cff"/>
+      <stop offset="1" stop-color="#ff2442"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1280" height="640" fill="url(#bg)"/>
+  <rect width="1280" height="640" fill="url(#dots)"/>
+  <rect width="1280" height="640" fill="url(#glow)"/>
+  <rect width="1280" height="640" fill="url(#glow2)"/>
+
+  <!-- 顶部标签 -->
+  <rect x="470" y="64" width="340" height="46" rx="23" fill="none" stroke="#4d628a" stroke-width="1.5"/>
+  <text x="640" y="94" text-anchor="middle" font-family="'Segoe UI','Microsoft YaHei',sans-serif" font-size="19" letter-spacing="4" fill="#8aa3c8">AGENT SKILL · MIT</text>
+
+  <!-- 主标题 -->
+  <text x="640" y="208" text-anchor="middle" font-family="'Cascadia Code','Consolas','Segoe UI',monospace" font-size="76" font-weight="700" fill="#f0f6fc">multi-platform-research</text>
+
+  <!-- 渐变分隔线 -->
+  <rect x="340" y="248" width="600" height="4" rx="2" fill="url(#line)"/>
+
+  <!-- 中文副题 -->
+  <text x="640" y="318" text-anchor="middle" font-family="'Segoe UI','Microsoft YaHei',sans-serif" font-size="34" font-weight="600" fill="#dce6f5">多平台深度检索调研 Skill —— 检索 · 取证 · 核验 · 成文</text>
+
+  <!-- 英文副题 -->
+  <text x="640" y="366" text-anchor="middle" font-family="'Segoe UI','Microsoft YaHei',sans-serif" font-size="21" fill="#7d93b8">Evidence-strict research across Chinese platforms · Chrome DevTools Protocol</text>
+
+  <!-- 平台 chips -->
+  <g font-family="'Segoe UI','Microsoft YaHei',sans-serif" font-size="24" font-weight="600" text-anchor="middle">
+    <rect x="268" y="428" width="146" height="62" rx="31" fill="#0f2740" stroke="#00a1d6" stroke-width="2"/>
+    <text x="341" y="468" fill="#5fd0f0">B站</text>
+
+    <rect x="442" y="428" width="146" height="62" rx="31" fill="#1c1c24" stroke="#fe2c55" stroke-width="2"/>
+    <text x="515" y="468" fill="#ffffff">抖音</text>
+
+    <rect x="616" y="428" width="146" height="62" rx="31" fill="#3a0d14" stroke="#ff2442" stroke-width="2"/>
+    <text x="689" y="468" fill="#ff8296">小红书</text>
+
+    <rect x="790" y="428" width="146" height="62" rx="31" fill="#0d2233" stroke="#0084ff" stroke-width="2"/>
+    <text x="863" y="468" fill="#6db8ff">知乎</text>
+
+    <rect x="964" y="428" width="146" height="62" rx="31" fill="#1a2333" stroke="#5a6f92" stroke-width="2"/>
+    <text x="1037" y="468" fill="#aebfd9">Web</text>
+  </g>
+
+  <!-- 底部元信息 -->
+  <g font-family="'Segoe UI','Microsoft YaHei',sans-serif" font-size="19" fill="#5f7699" text-anchor="middle">
+    <text x="640" y="556">每周 CI 平台体检 ✓ 平台知识带「最后验证日期」· 结论可溯源 · 礼貌访问</text>
+  </g>
+</svg>
