@@ -1,0 +1,37 @@
+{
+  "platform": "xhs",
+  "crawledAt": "2026-10-21T18:30:00+08:00",
+  "keywords": {
+    "大学生 时间管理": [
+      {
+        "title": "【示例】时间管理App实测一个月，这份对比表请收好",
+        "author": "示例笔记作者A",
+        "like": 1675,
+        "likeLabel": "like",
+        "extra": { "collect": 2301, "commentCount": 145 },
+        "href": "/search_result/<示例笔记ID>?xsec_token=<TOKEN占位_原样保留>",
+        "keyword": "大学生 时间管理"
+      },
+      {
+        "title": "【示例】期末周自救指南：我是怎么安排复习顺序的",
+        "author": "示例笔记作者B",
+        "like": 892,
+        "likeLabel": "like",
+        "extra": { "collect": 1240, "commentCount": 63 },
+        "href": "/explore/<示例笔记ID2>",
+        "keyword": "大学生 时间管理"
+      }
+    ],
+    "调研 问卷 技巧": [
+      {
+        "title": "【示例】毕设问卷发了三天只有40份，后来我做对了这三件事",
+        "author": "示例笔记作者C",
+        "like": 2130,
+        "likeLabel": "like",
+        "extra": { "collect": 1809, "commentCount": 221 },
+        "href": "/search_result/<示例笔记ID3>?xsec_token=<TOKEN占位_原样保留>",
+        "keyword": "调研 问卷 技巧"
+      }
+    ]
+  }
+}
