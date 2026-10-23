@@ -175,9 +175,15 @@ async function runStatic() {
   // 1. B站公开 API（P2 数据回验通道，playbooks 第 1 节）
   try {
     const r = await httpGet('https://api.bilibili.com/x/web-interface/view?bvid=BV1GJ411x7h7', { Referer: 'https://www.bilibili.com' });
-    const j = JSON.parse(r.body || '{}');
-    if (j.code === 0 && j.data && j.data.bvid) record('bili-view-api', 'bili', 'static', 'pass', `code=0, title=${(j.data.title || '').slice(0, 24)}`);
-    else record('bili-view-api', 'bili', 'static', 'fail', `code=${j.code ?? r.status} message=${j.message ?? ''}`);
+    // 失败模式区分：返回 HTML = IP 级风控/地域拦截（海外 runner 常见，环境限制，非关键）；
+    // 返回 JSON 但 code != 0 = API 行为异常（bvid 失效、接口改版等），关键。
+    if (/^\s*<(!DOCTYPE|html)/i.test(r.body || '')) {
+      record('bili-view-api', 'bili', 'static', 'fail', '返回 HTML 风控页而非 JSON——IP 级风控/地域拦截（海外 IP 常见），属环境限制', false);
+    } else {
+      const j = JSON.parse(r.body || '{}');
+      if (j.code === 0 && j.data && j.data.bvid) record('bili-view-api', 'bili', 'static', 'pass', `code=0, title=${(j.data.title || '').slice(0, 24)}`);
+      else record('bili-view-api', 'bili', 'static', 'fail', `code=${j.code ?? r.status} message=${j.message ?? ''}`);
+    }
   } catch (e) { record('bili-view-api', 'bili', 'static', 'fail', e.message); }
 
   // 2. B站搜索页可达性（P2 漏斗入口）
