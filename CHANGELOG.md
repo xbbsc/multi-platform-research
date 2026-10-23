@@ -4,8 +4,26 @@
 
 ## [Unreleased]
 
-- 2026-10-23：CI 文件（`.github/workflows/probe.yml`）经 contents API 补推合入 main（本网络 git 通道受限；**tag `v0.3.0` 不含该文件**，从 tag 构建的用户请改用 main）。
-- 2026-10-23：`probe_platforms.mjs` 失败模式区分——B站 view API 返回 HTML 风控页（海外 IP 常见，如 GitHub Actions runner）改判为**非关键** FAIL（环境限制而非平台知识腐化）；JSON 响应异常仍为关键项。CI 首跑验证通过。
+（暂无）
+
+## [1.0.0] - 2026-10-23
+
+主题：**生态**——让外部用户有理由、有路径参与进来。
+
+### Added 新增
+
+- **GitHub Actions 定时体检上线**（`.github/workflows/probe.yml`，2026-10-23 经 contents API 补推合入 main）：每周一自动跑静态组，手动可触发附带 headless Chrome 的浏览器组（即 Linux 无头环境的跨平台验证）；报告写 workflow summary + artifact 保留 90 天。注意 tag `v0.3.0` 不含该文件，从 v1.0.0 起完整。
+- **`CONTRIBUTING.md` 贡献指南**：三类贡献路径（playbook 修正 / 脚本 / 文档），playbook 修正 PR 的硬性验证规范（更新「最后验证日期」+ 附 probe 证据 + 说明复现环境 + 区分环境限制与知识腐化）。
+- **Issue / PR 模板**：「平台知识失效」报告表单（平台 / 症状 / probe 输出 / 环境）；PR 模板含验证信息必填与自查清单。外部贡献的入口设施至此闭环。
+- **`references/extending-platforms.md` 新平台扩展指南**：接入决策清单、五步法（访问模型侦察 → playbook 章节 → probe 检查项 → 登录判据 → 文档勾连）、关键性判定原则（环境限制 vs 知识腐化，含 2026-10-23 B站 API 案例解析）、速率自律边界。
+- **`examples/` 合成数据示例库**：漏斗搜索 JSON（B站 / 小红书，含 `xsec_token` 占位）、深挖详情 JSON（含评论区）、带来源标注与三态核验表的报告片段——新用户不用跑一遍真实调研也能看懂每一步产出什么。
+- **README 首屏视觉与英文摘要**：新增 1280×640 Social preview（`assets/social-preview.svg` 可编辑源文件 + PNG），README 顶部嵌入 banner 并加英文摘要段；仓库 About 封面请到 Settings → Social preview 上传 `assets/social-preview.png`。
+
+### Fixed 修复
+
+- `probe_platforms.mjs` 失败模式区分：B站 view API 返回 HTML 风控页（海外 IP 常见，如 GitHub Actions runner）改判为**非关键** FAIL（环境限制而非平台知识腐化）；JSON 响应异常仍为关键项。CI 首跑验证通过，第二跑 success。
+
+### Changed 变更
 
 ## [0.3.0] - 2026-10-22
 
