@@ -2,6 +2,11 @@
 
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/) 与 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 格式。
 
+## [Unreleased]
+
+- 2026-10-23：CI 文件（`.github/workflows/probe.yml`）经 contents API 补推合入 main（本网络 git 通道受限；**tag `v0.3.0` 不含该文件**，从 tag 构建的用户请改用 main）。
+- 2026-10-23：`probe_platforms.mjs` 失败模式区分——B站 view API 返回 HTML 风控页（海外 IP 常见，如 GitHub Actions runner）改判为**非关键** FAIL（环境限制而非平台知识腐化）；JSON 响应异常仍为关键项。CI 首跑验证通过。
+
 ## [0.3.0] - 2026-10-22
 
 主题：**可带走**——换一台 mac / linux，从零到第一次成功。
