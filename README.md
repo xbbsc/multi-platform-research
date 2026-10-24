@@ -56,7 +56,7 @@
 ~/.workbuddy/skills/multi-platform-research/
 ```
 
-**安全提示**：调试浏览器使用独立 profile（如 `~/.workbuddy/cdp-chrome-profile`），其中保存了各平台登录 cookie——请勿共享此目录、勿将其提交到任何 git 仓库、勿授权不可信脚本读取。
+**安全提示**：调试浏览器使用独立 profile（`start_browser.mjs` 默认 `~/.multi-platform-research/chrome-profile`，若曾用过旧路径 `~/.workbuddy/cdp-chrome-profile` 则自动沿用），其中保存了各平台登录 cookie——请勿共享此目录、勿将其提交到任何 git 仓库、勿授权不可信脚本读取。
 
 ## 快速开始
 

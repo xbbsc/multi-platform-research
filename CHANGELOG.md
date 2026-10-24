@@ -4,7 +4,9 @@
 
 ## [Unreleased]
 
-（暂无）
+### Fixed 修复
+
+- **新用户首次安装的文档路径错误**：`README.md` 安装章节与 `references/env-pitfalls.md` A1 的示例 profile 仍写旧默认 `~/.workbuddy/cdp-chrome-profile`，而 v0.3 起脚本实际默认是 `~/.multi-platform-research/chrome-profile`（旧路径存在则自动沿用）。照文档手动启动浏览器的用户会与 `start_browser.mjs` 落在两个不同 profile，白丢一次登录态。已统一为真实默认值，A1 并补一句「优先用 `start_browser.mjs`」。
 
 ## [1.0.0] - 2026-10-23
 

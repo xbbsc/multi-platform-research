@@ -11,9 +11,10 @@
 - **解法**：用独立 profile 启动（登录态留存、不影响日常浏览器）：
   ```bash
   "<chrome路径>" --remote-debugging-port=9222 \
-    --user-data-dir="<隔离目录，如 ~/.workbuddy/cdp-chrome-profile>" \
+    --user-data-dir="<隔离目录，如 ~/.multi-platform-research/chrome-profile>" \
     --no-first-run --no-default-browser-check --window-size=1400,900 "about:blank"
   ```
+  更省事的是直接 `node scripts/start_browser.mjs`（自动探测浏览器路径 + 幂等 + CDP 自检）。
   启动后先留一个 about:blank 页驻守（见 B2）。
 
 ### A2. Chrome 155+ 拒绝无 browser ID 的 WebSocket 端点
